@@ -19,25 +19,23 @@ function App() {
   const setPinnedMusic = musicContext.setPinnedMusic;
   const resultOffset = musicContext.resultOffset;
   const setResultOffset = musicContext.setResultOffset;
-  
-  const CLIENT_Id = "6facac2225934567aafa8f6d9068e335";
-  const CLIENT_SECRET = "43dee1253c2b4f1a8d9e21c08acd6d74"; // Ideally, this should be in an environment variable
-  const REDIRECT_URI = "http://localhost:3000";
-  const AUTH_endpoint = "https://accounts.spotify.com/authorize";
 
-  
+  const CLIENT_ID = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
+  const CLIENT_SECRET = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET;
+  const REDIRECT_URI = "http://localhost:3000";
+  const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+
   useEffect(() => {
     initializePlaylist();
 
-    // current client credentials will be deleted in few days
+    // current client credentials will be deleted in a few days
     const fetchToken = async () => {
       try {
         const response = await fetch("https://accounts.spotify.com/api/token", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": "Basic " + btoa(`${CLIENT_Id}:${CLIENT_SECRET}`),
-
+            "Authorization": "Basic " + btoa(`${CLIENT_ID}:${CLIENT_SECRET}`),
           },
           body: "grant_type=client_credentials",
         });
@@ -54,26 +52,28 @@ function App() {
         setIsLoading(false);
       }
     };
+
     fetchToken();
     setLikedMusic(JSON.parse(localStorage.getItem("likedMusic")));
     setPinnedMusic(JSON.parse(localStorage.getItem("pinnedMusic")));
   }, [setIsLoading, setLikedMusic, setPinnedMusic]);
 
-const searchParameters = {
-    method: 'GET',
+  const searchParameters = {
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   };
+
   const fetchMusicData = async () => {
     setTracks([]);
     window.scrollTo(0, 0);
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://api.spotify.com/v1/search?q=${keyword}&type=track&offset=${resultOffset}`,searchParameters
-      
+        `https://api.spotify.com/v1/search?q=${keyword}&type=track&offset=${resultOffset}`,
+        searchParameters
       );
 
       if (!response.ok) {
@@ -97,7 +97,6 @@ const searchParameters = {
     }
   };
 
-  
   return (
     <>
       <Navbar
