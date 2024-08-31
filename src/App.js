@@ -1,7 +1,6 @@
 import "./App.css";
 import { useContext, useEffect, useState } from "react";
 import Card from "./components/Card";
-import CreatePlaylist from "./components/CreatePlaylist";
 import { initializePlaylist } from "./initialize";
 import Navbar from "./components/Navbar";
 import { MusicContext } from "./Context";
@@ -13,19 +12,48 @@ function App() {
   const [token, setToken] = useState(null);
 
   const musicContext = useContext(MusicContext);
-  const isLoading = musicContext.isLoading;
-  const setIsLoading = musicContext.setIsLoading;
+
   const setLikedMusic = musicContext.setLikedMusic;
   const setPinnedMusic = musicContext.setPinnedMusic;
   const resultOffset = musicContext.resultOffset;
   const setResultOffset = musicContext.setResultOffset;
-  
-  const CLIENT_Id = "6facac2225934567aafa8f6d9068e335";
-  const CLIENT_SECRET = "43dee1253c2b4f1a8d9e21c08acd6d74"; // Ideally, this should be in an environment variable
-  const REDIRECT_URI = "http://localhost:3000";
-  const AUTH_endpoint = "https://accounts.spotify.com/authorize";
+ const CLIENT_Id = "6facac2225934567aafa8f6d9068e335";
+ const CLIENT_SECRET = "43dee1253c2b4f1a8d9e21c08acd6d74"; // Ideally, this should be in an environment variable
 
-  
+
+
+  const fetchMusicData = async () => {
+    setTracks([]);
+    window.scrollTo(0, 0);
+    try {
+      const response = await fetch(
+        `https://api.spotify.com/v1/search?q=${keyword === ""?"trending":keyword}&type=track&offset=${resultOffset}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch music data");
+      }
+
+      const jsonData = await response.json();
+
+      setTracks(jsonData.tracks.items);
+    } catch (error) {
+      setMessage(error.message);
+    } 
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      setResultOffset(0);
+      fetchMusicData();
+    }
+  };
+
   useEffect(() => {
     initializePlaylist();
 
@@ -37,7 +65,6 @@ function App() {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
             "Authorization": "Basic " + btoa(`${CLIENT_Id}:${CLIENT_SECRET}`),
-
           },
           body: "grant_type=client_credentials",
         });
@@ -50,54 +77,13 @@ function App() {
         setToken(jsonData.access_token);
       } catch (error) {
         setMessage(error.message);
-      } finally {
-        setIsLoading(false);
-      }
+      } 
     };
     fetchToken();
     setLikedMusic(JSON.parse(localStorage.getItem("likedMusic")));
     setPinnedMusic(JSON.parse(localStorage.getItem("pinnedMusic")));
-  }, [setIsLoading, setLikedMusic, setPinnedMusic]);
+  }, [setLikedMusic, setPinnedMusic]);
 
-const searchParameters = {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-  };
-  const fetchMusicData = async () => {
-    setTracks([]);
-    window.scrollTo(0, 0);
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.spotify.com/v1/search?q=${keyword}&type=track&offset=${resultOffset}`,searchParameters
-      
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch music data");
-      }
-
-      const jsonData = await response.json();
-
-      setTracks(jsonData.tracks.items);
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter") {
-      setResultOffset(0);
-      fetchMusicData();
-    }
-  };
-
-  
   return (
     <>
       <Navbar
@@ -108,17 +94,6 @@ const searchParameters = {
       />
 
       <div className="container">
-        <div className={`row ${isLoading ? "" : "d-none"}`}>
-          <div className="col-12 py-5 text-center">
-            <div
-              className="spinner-border"
-              style={{ width: "3rem", height: "3rem" }}
-              role="status"
-            >
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
         <div className="row">
           {tracks.map((element) => {
             return <Card key={element.id} element={element} />;
@@ -161,28 +136,14 @@ const searchParameters = {
               asap-music
             </h1>
             <h3 className="py-5">Discover music in 30 seconds</h3>
-            <div>
-              <a
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-outline-dark"
-                href="https://github.com/Ayushman601/music-app"
-              >
-                <i className="bi bi-github mx-2"></i>Github
-              </a>
-            </div>
+           
           </div>
         </div>
       </div>
-      <div
-        className="modal fade position-absolute"
-        id="exampleModal"
-        tabIndex={-1}
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-      >
-        <CreatePlaylist />
+      <div>
+
       </div>
+      
     </>
   );
 }
